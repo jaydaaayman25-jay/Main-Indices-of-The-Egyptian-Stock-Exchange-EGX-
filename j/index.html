@@ -1,0 +1,1424 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+    <title>المؤشرات الرئيسية للبورصة المصرية</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;600;700;800;900&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="style.css">
+    <style>
+        /* ===== شاشة كاملة بدون سكرول ===== */
+        html, body {
+            height: 100%;
+            margin: 0;
+            overflow: hidden;
+        }
+        body {
+            background: var(--bg-light);
+            color: var(--text-main);
+            font-family: 'Cairo', sans-serif;
+            position: relative;
+        }
+
+        /* ===== شاشة المقدمة (Cover) ===== */
+        #cover {
+            position: fixed;
+            inset: 0;
+            z-index: 100;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            gap: clamp(10px, 2.5vh, 28px);
+            padding: clamp(14px, 3vh, 30px);
+            background: linear-gradient(160deg, #2C5E4F 0%, #1D5263 50%, #143B47 100%);
+            text-align: center;
+            transition: opacity 0.5s ease, transform 0.5s ease;
+        }
+        #cover.hidden {
+            opacity: 0;
+            transform: scale(1.05);
+            pointer-events: none;
+        }
+
+        #cover .cover-title {
+            color: #FAFFC7;
+            font-weight: 900;
+            font-size: clamp(1.6rem, 6vw, 3.2rem);
+            line-height: 1.2;
+            text-shadow: 0 4px 18px rgba(0,0,0,0.35);
+            margin: 0;
+            max-width: 90%;
+        }
+        #cover .cover-sub {
+            color: #E8F5E9;
+            font-size: clamp(0.9rem, 3vw, 1.2rem);
+            font-weight: 600;
+            opacity: 0.92;
+            margin: 0;
+        }
+        #cover .cover-img-wrap {
+            width: min(78vw, 460px);
+            max-height: 46vh;
+            border-radius: 18px;
+            overflow: hidden;
+            box-shadow: 0 18px 40px rgba(0,0,0,0.4);
+            border: 4px solid rgba(250,255,199,0.85);
+        }
+        #cover .cover-img-wrap img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+            display: block;
+        }
+        #start-btn {
+            background: var(--accent-yellow);
+            color: #1D5263;
+            border: none;
+            padding: clamp(12px, 2.5vh, 18px) clamp(30px, 7vw, 56px);
+            font-size: clamp(1.05rem, 3.5vw, 1.5rem);
+            font-weight: 800;
+            border-radius: 50px;
+            cursor: pointer;
+            box-shadow: 0 8px 22px rgba(0,0,0,0.3);
+            transition: transform 0.2s, box-shadow 0.2s;
+            font-family: inherit;
+            display: inline-flex;
+            align-items: center;
+            gap: 10px;
+        }
+        #start-btn:hover { transform: translateY(-3px); box-shadow: 0 12px 28px rgba(0,0,0,0.4); }
+        #start-btn:active { transform: translateY(0); }
+
+        /* ===== التطبيق ===== */
+        #app {
+            position: fixed;
+            inset: 0;
+            display: flex;
+            flex-direction: column;
+            opacity: 0;
+            pointer-events: none;
+            transition: opacity 0.5s ease;
+            background: var(--bg-light);
+        }
+        #app.visible { opacity: 1; pointer-events: auto; }
+
+        .top-bar {
+            flex: 0 0 auto;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 10px;
+            padding: clamp(8px, 1.8vh, 14px) clamp(12px, 3vw, 24px);
+            background: #fff;
+            border-bottom: 2px solid var(--border-gray);
+        }
+        .top-bar .ind {
+            font-weight: 800;
+            color: var(--dark-teal-green);
+            font-size: clamp(0.85rem, 2.6vw, 1rem);
+            white-space: nowrap;
+        }
+        .back-btn {
+            background: #fff;
+            border: 2px solid var(--dark-teal-green);
+            color: var(--dark-teal-green);
+            border-radius: 50%;
+            width: clamp(32px, 8vw, 38px);
+            height: clamp(32px, 8vw, 38px);
+            font-size: 1rem;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-family: inherit;
+            flex: 0 0 auto;
+        }
+        .progress-mini {
+            flex: 1;
+            height: 8px;
+            background: var(--border-gray);
+            border-radius: 10px;
+            overflow: hidden;
+            margin: 0 8px;
+        }
+        .progress-mini > div {
+            height: 100%;
+            background: var(--gradient-bg);
+            width: 25%;
+            transition: width 0.4s ease;
+        }
+
+        .stage-area {
+            flex: 1 1 auto;
+            position: relative;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: clamp(8px, 2vh, 18px);
+            min-height: 0;
+        }
+        .scene-stage {
+            position: relative;
+            width: 100%;
+            max-width: 920px;
+            height: 100%;
+            max-height: 100%;
+            border-radius: 18px;
+            overflow: hidden;
+            background: #000;
+            box-shadow: 0 8px 22px rgba(38, 105, 99, 0.2);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        .scene-stage img.scene-img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+            display: block;
+        }
+
+        /* ===== فقاعات الكلام لكل شخصية ===== */
+        .scene-callout {
+            position: absolute;
+            max-width: 38%;
+            background: #fff;
+            border: 2.5px solid var(--dark-teal-green);
+            border-radius: 14px;
+            padding: clamp(14px, 2.6vh, 20px) clamp(9px, 1.6vw, 12px) clamp(6px, 1.2vh, 9px);
+            box-shadow: 0 6px 18px rgba(0,0,0,0.25);
+            font-size: clamp(0.72rem, 2vw, 0.88rem);
+            line-height: 1.45;
+            color: var(--text-main);
+            z-index: 4;
+            animation: calloutIn 0.35s ease;
+        }
+        @keyframes calloutIn {
+            from { opacity: 0; transform: translateY(10px) scale(0.94); }
+            to   { opacity: 1; transform: translateY(0)    scale(1); }
+        }
+        /* اسم الشخصية: badge طالع فوق الفقاعة (يحدد مين بيتكلم) */
+        .scene-callout .who {
+            position: absolute;
+            top: -14px;
+            right: 14px;   /* يفضل قريب من حافة الفقاعة (افتراضي يمين) */
+            background: var(--dark-teal-green);
+            color: #fff;
+            font-weight: 800;
+            font-size: clamp(0.72rem, 2.2vw, 0.86rem);
+            padding: 2px 12px;
+            border-radius: 10px;
+            box-shadow: 0 3px 8px rgba(0,0,0,0.2);
+            line-height: 1.4;
+            white-space: nowrap;
+            z-index: 5;
+        }
+        /* لون مختلف لكل شخصية — زياد: أخضر داكن، حمزة: برتقالي */
+        .scene-callout.ziad .who { background: #1B5E20; }   /* زياد: أخضر */
+        .scene-callout.hamza .who { background: #E65100; }  /* حمزة: برتقالي */
+        /* حمزة على يسار الصورة → خلي الاسم على حافة الفقاعة اليسرى */
+        .scene-callout.hamza .who { right: auto; left: 14px; }
+        .scene-callout .what { display: block; }
+
+        .scene-callout::after {
+            content: "";
+            position: absolute;
+            width: 0;
+            height: 0;
+            border-style: solid;
+        }
+        /* زياد (يمين الصورة) → فقاعته فوق يمين، السهم بيشاور للتحت-يمين ناحية الشخصية */
+        .scene-callout.ziad { right: 3%; top: 5%; max-width: 40%; }
+        .scene-callout.ziad::after {
+            bottom: -12px; right: 24px;
+            border-width: 12px 14px 0 0;
+            border-color: var(--dark-teal-green) transparent transparent transparent;
+        }
+        /* حمزة (يسار الصورة) → فقاعته فوق يسار، السهم بيشاور للتحت-يسار ناحية الشخصية */
+        .scene-callout.hamza { left: 3%; top: 5%; max-width: 40%; }
+        .scene-callout.hamza::after {
+            bottom: -12px; left: 24px;
+            border-width: 12px 0 0 14px;
+            border-color: var(--dark-teal-green) transparent transparent transparent;
+        }
+        /* الراوي → فقاعة وسطية علوية */
+        .scene-callout.narrator {
+            left: 50%; top: 6%;
+            transform: translateX(-50%);
+            max-width: 80%;
+            background: #EEF5F4;
+            border-color: var(--dark-teal-green);
+            text-align: center;
+        }
+        .scene-callout.narrator::after { display: none; }
+
+        /* توهّج الشخصية المتحدثة بدل الدائرة النابضة */
+        /* ضوء ناعم على ناحية المتحدث: يمين الصورة لزياد، يسارها لحمزة */
+        .speaker-glow {
+            position: absolute;
+            top: 0; bottom: 0;
+            width: 50%;
+            pointer-events: none;
+            z-index: 2;
+            opacity: 0;
+            transition: opacity 0.4s ease;
+        }
+        .speaker-glow.ziad {
+            right: 0;
+            background: radial-gradient(ellipse at 80% 45%,
+                rgba(250,255,199,0.55) 0%,
+                rgba(250,255,199,0.25) 30%,
+                rgba(250,255,199,0) 65%);
+        }
+        .speaker-glow.hamza {
+            left: 0;
+            background: radial-gradient(ellipse at 20% 45%,
+                rgba(250,255,199,0.55) 0%,
+                rgba(250,255,199,0.25) 30%,
+                rgba(250,255,199,0) 65%);
+        }
+        .speaker-glow.active { opacity: 1; animation: glowPulse 1.6s ease-in-out infinite; }
+        @keyframes glowPulse {
+            0%, 100% { opacity: 0.75; }
+            50%      { opacity: 1; }
+        }
+
+        /* مؤشر الكتابة (الشرطة اللي بتنور أثناء الكتابة) */
+        .scene-callout .what::after {
+            content: "▋";
+            color: var(--dark-teal-green);
+            font-weight: 400;
+            margin-right: 2px;
+            opacity: 0;
+        }
+        .scene-callout.typing .what::after {
+            opacity: 1;
+            animation: caret 0.7s steps(1) infinite;
+        }
+        @keyframes caret {
+            0%, 49% { opacity: 1; }
+            50%, 100% { opacity: 0; }
+        }
+
+        .bottom-bar {
+            flex: 0 0 auto;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 10px;
+            padding: clamp(8px, 1.8vh, 14px) clamp(12px, 3vw, 24px);
+            background: #fff;
+            border-top: 2px solid var(--border-gray);
+        }
+        .dialogue-dots {
+            display: flex;
+            gap: 7px;
+            flex: 1;
+            justify-content: center;
+            flex-wrap: wrap;
+        }
+        .dialogue-dots span {
+            width: 10px; height: 10px;
+            border-radius: 50%;
+            background: var(--border-gray);
+            cursor: pointer;
+            transition: background 0.2s, transform 0.2s;
+        }
+        .dialogue-dots span.active { background: var(--primary-green); transform: scale(1.3); }
+        .dialogue-dots span.done   { background: var(--dark-teal-green); }
+        .nav-btn {
+            background: var(--gradient-bg);
+            color: #fff;
+            border: none;
+            padding: clamp(8px, 1.6vh, 12px) clamp(14px, 3vw, 22px);
+            font-size: clamp(0.85rem, 2.6vw, 1rem);
+            font-weight: 700;
+            border-radius: 10px;
+            cursor: pointer;
+            font-family: inherit;
+            box-shadow: 0 3px 10px rgba(76,154,71,0.3);
+            transition: transform 0.2s;
+            white-space: nowrap;
+            flex: 0 0 auto;
+        }
+        .nav-btn:hover { transform: translateY(-2px); }
+        .nav-btn.secondary {
+            background: #fff;
+            color: var(--dark-teal-green);
+            border: 2px solid var(--dark-teal-green);
+            box-shadow: none;
+        }
+        .nav-btn:disabled { opacity: 0.4; cursor: not-allowed; transform: none; }
+
+
+        /* سؤال المشهد — بيظهر فوق الصورة في النص */
+        /* ===== سلايد تعليمية قبل كل مشهد ===== */
+        .info-overlay {
+            position: absolute;
+            inset: 0;
+            display: none;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            padding: clamp(12px, 3vw, 24px);
+            background: linear-gradient(160deg, rgba(13,71,63,0.96), rgba(20,108,95,0.97));
+            z-index: 30;
+            overflow-y: auto;
+            animation: infoFadeIn 0.4s ease;
+        }
+        .info-overlay.active { display: flex; }
+        @keyframes infoFadeIn {
+            from { opacity: 0; transform: scale(0.98); }
+            to   { opacity: 1; transform: scale(1); }
+        }
+        .info-card {
+            background: #fff;
+            border-radius: 18px;
+            padding: clamp(16px, 4vw, 28px);
+            max-width: 560px;
+            width: 100%;
+            box-shadow: 0 14px 40px rgba(0,0,0,0.3);
+            text-align: center;
+        }
+        .info-head { margin-bottom: clamp(10px, 2vh, 18px); }
+        .info-badge {
+            display: inline-block;
+            background: var(--dark-teal-green);
+            color: #fff;
+            font-size: clamp(0.7rem, 2vw, 0.82rem);
+            font-weight: 700;
+            padding: 3px 14px;
+            border-radius: 20px;
+            margin-bottom: 8px;
+        }
+        .info-title {
+            color: var(--dark-teal-green);
+            font-size: clamp(1.3rem, 4.5vw, 1.8rem);
+            font-weight: 800;
+            margin: 4px 0;
+            line-height: 1.3;
+        }
+        .info-subtitle {
+            color: #666;
+            font-size: clamp(0.85rem, 2.6vw, 1rem);
+            font-weight: 600;
+            margin: 0;
+        }
+        .info-list {
+            list-style: none;
+            padding: 0;
+            margin: 0 0 clamp(14px, 3vh, 22px);
+            text-align: right;
+            display: flex;
+            flex-direction: column;
+            gap: clamp(8px, 1.6vh, 12px);
+        }
+        .info-list li {
+            position: relative;
+            padding-right: 26px;
+            font-size: clamp(0.82rem, 2.5vw, 0.98rem);
+            line-height: 1.55;
+            color: var(--text-main);
+        }
+        .info-list li::before {
+            content: "";
+            position: absolute;
+            right: 4px;
+            top: 8px;
+            width: 10px;
+            height: 10px;
+            border-radius: 50%;
+            background: var(--primary-green);
+        }
+        .info-start-btn {
+            background: var(--primary-green);
+            color: #fff;
+            border: none;
+            border-radius: 30px;
+            padding: clamp(10px, 2vh, 14px) clamp(28px, 6vw, 40px);
+            font-size: clamp(0.95rem, 3vw, 1.1rem);
+            font-weight: 800;
+            font-family: inherit;
+            cursor: pointer;
+            box-shadow: 0 6px 18px rgba(46,125,50,0.4);
+            transition: transform 0.15s, box-shadow 0.15s;
+        }
+        .info-start-btn:hover { transform: translateY(-2px); box-shadow: 0 9px 24px rgba(46,125,50,0.5); }
+        .info-start-btn:active { transform: translateY(0); }
+
+        .scene-quiz {
+            position: absolute;
+            inset: 0;
+            display: none;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            padding: clamp(10px, 2.5vw, 20px);
+            background: rgba(20, 59, 71, 0.78);
+            backdrop-filter: blur(4px);
+            z-index: 6;
+            animation: calloutIn 0.35s ease;
+        }
+        .scene-quiz.active { display: flex; }
+        .scene-quiz .sq-title {
+            color: #FAFFC7;
+            font-weight: 800;
+            font-size: clamp(0.95rem, 3vw, 1.25rem);
+            margin-bottom: 8px;
+        }
+        .scene-quiz .sq-q {
+            background: #fff;
+            color: var(--text-main);
+            font-weight: 700;
+            font-size: clamp(0.9rem, 2.8vw, 1.1rem);
+            padding: clamp(10px, 2vw, 14px) clamp(14px, 3vw, 20px);
+            border-radius: 12px;
+            margin-bottom: 12px;
+            max-width: 92%;
+            text-align: center;
+            line-height: 1.5;
+        }
+        .scene-quiz .sq-opts {
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+            width: min(92%, 420px);
+        }
+        .scene-quiz .sq-opt {
+            background: #fff;
+            border: 2px solid var(--border-gray);
+            color: var(--text-main);
+            padding: clamp(9px, 2vh, 12px) 16px;
+            border-radius: 10px;
+            font-size: clamp(0.85rem, 2.6vw, 1rem);
+            font-weight: 600;
+            cursor: pointer;
+            font-family: inherit;
+            transition: all 0.15s;
+            text-align: right;
+        }
+        .scene-quiz .sq-opt:hover:not(:disabled) {
+            border-color: var(--primary-green);
+            background: #F0F7F0;
+            transform: translateY(-1px);
+        }
+        .scene-quiz .sq-opt.correct { background: #E8F5E9; border-color: var(--primary-green); color: #1B5E20; }
+        .scene-quiz .sq-opt.wrong   { background: #FFEBEE; border-color: var(--error-text); color: var(--error-text); }
+        .scene-quiz .sq-opt:disabled { cursor: default; }
+        .scene-quiz .sq-feedback {
+            margin-top: 10px;
+            text-align: center;
+            max-width: 92%;
+            font-size: clamp(0.82rem, 2.5vw, 0.95rem);
+            font-weight: 600;
+            line-height: 1.5;
+        }
+        .scene-quiz .sq-feedback .ok { color: #B9F6CA; }
+        .scene-quiz .sq-feedback .no { color: #FFCDD2; }
+        .scene-quiz .sq-retry-wrap { text-align: center; min-height: 22px; }
+        .scene-quiz .sq-retry {
+            display: inline-block;
+            background: var(--accent-yellow);
+            color: var(--dark-teal-green);
+            font-weight: 800;
+            font-size: clamp(0.8rem, 2.4vw, 0.95rem);
+            padding: 5px 14px;
+            border-radius: 20px;
+            animation: shake 0.5s ease;
+        }
+        @keyframes shake {
+            0%, 100% { transform: translateX(0); }
+            20% { transform: translateX(-4px); }
+            40% { transform: translateX(4px); }
+            60% { transform: translateX(-3px); }
+            80% { transform: translateX(3px); }
+        }
+
+        /* نقطة السؤال في شريط النقط */
+        .dialogue-dots span.quiz-dot {
+            width: 12px; height: 12px;
+            border-radius: 3px;
+        }
+        .dialogue-dots span.quiz-dot.active { background: var(--accent-yellow-dark); }
+        .dialogue-dots span.quiz-dot.done   { background: var(--accent-yellow-dark); }
+
+        /* شاشة الاختبار النهائي — سؤال واحد في كل سلايد بحجم المشهد */
+        .quiz-screen {
+            position: absolute;
+            inset: 0;
+            background: var(--bg-light);
+            display: none;
+            flex-direction: column;
+            z-index: 10;
+        }
+        .quiz-screen.active { display: flex; }
+        .quiz-body {
+            flex: 1 1 auto;
+            overflow-y: auto;
+            -webkit-overflow-scrolling: touch;
+            display: flex;
+            flex-direction: column;
+        }
+        .quiz-body::-webkit-scrollbar { width: 6px; }
+        .quiz-body::-webkit-scrollbar-thumb { background: var(--border-gray); border-radius: 4px; }
+
+        /* سلايد السؤال الواحد — يملأ الشاشة بالظبط زي المشهد */
+        #quizScreen .quiz-slide {
+            display: flex;
+            flex-direction: column;
+            gap: clamp(10px, 2vh, 16px);
+            height: 100%;
+            padding: clamp(12px, 3vw, 22px);
+            max-width: 760px;
+            margin: 0 auto;
+            width: 100%;
+            box-sizing: border-box;
+        }
+        .quiz-progress {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 10px;
+            color: var(--dark-teal-green);
+            font-weight: 700;
+            font-size: clamp(0.8rem, 2.4vw, 0.95rem);
+            flex: 0 0 auto;
+        }
+        .quiz-dots { display: flex; gap: 6px; }
+        .quiz-dots .qdot {
+            width: 9px; height: 9px; border-radius: 50%;
+            background: var(--border-gray);
+            transition: background 0.2s, transform 0.2s;
+        }
+        .quiz-dots .qdot.active { background: var(--primary-green); transform: scale(1.3); }
+        .quiz-dots .qdot.done { background: var(--dark-teal-green); }
+        .quiz-q-box {
+            display: flex;
+            align-items: flex-start;
+            gap: 10px;
+            background: #fff;
+            border: 2.5px solid var(--dark-teal-green);
+            border-radius: 14px;
+            padding: clamp(14px, 2.5vw, 20px);
+            box-shadow: 0 6px 18px rgba(0,0,0,0.08);
+            flex: 0 0 auto;
+        }
+        .quiz-q-box .q-num {
+            background: var(--gradient-bg);
+            color: #fff;
+            min-width: 34px; width: 34px; height: 34px;
+            border-radius: 50%;
+            display: flex; align-items: center; justify-content: center;
+            font-weight: 800; font-size: 0.95rem;
+            flex: 0 0 auto;
+        }
+        .quiz-q-box .q-text {
+            font-size: clamp(0.98rem, 3vw, 1.18rem);
+            font-weight: 700;
+            line-height: 1.6;
+            color: var(--text-main);
+            flex: 1;
+        }
+        #quizScreen .q-opts {
+            display: flex;
+            flex-direction: column;
+            gap: clamp(8px, 1.6vh, 12px);
+            flex: 0 0 auto;
+        }
+        #quizScreen .q-opt {
+            background: #fff;
+            border: 2px solid var(--border-gray);
+            color: var(--text-main);
+            padding: clamp(11px, 2.2vh, 16px) clamp(14px, 3vw, 20px);
+            border-radius: 12px;
+            font-size: clamp(0.92rem, 2.8vw, 1.06rem);
+            font-weight: 600;
+            cursor: pointer;
+            font-family: inherit;
+            transition: all 0.15s;
+            text-align: right;
+        }
+        #quizScreen .q-opt:hover:not(:disabled) {
+            border-color: var(--primary-green);
+            background: #F0F7F0;
+            transform: translateY(-1px);
+        }
+        #quizScreen .q-opt:disabled { cursor: default; }
+        #quizScreen .q-opt.correct { background: #E8F5E9; border-color: var(--primary-green); color: #1B5E20; }
+        #quizScreen .q-opt.wrong   { background: #FFEBEE; border-color: var(--error-text); color: var(--error-text); }
+        /* اختيار المستخدم في الاختبار النهائي — نظهر إنه المختار من غير ما نقول صح/غلط */
+        #quizScreen .q-opt.chosen {
+            background: #E3F2FD;
+            border-color: #1565C0;
+            color: #0D47A1;
+            box-shadow: 0 0 0 2px rgba(21,101,192,0.25);
+        }
+        .quiz-feedback {
+            min-height: 22px;
+            font-size: clamp(0.82rem, 2.5vw, 0.95rem);
+            font-weight: 600;
+            line-height: 1.5;
+            text-align: center;
+            flex: 0 0 auto;
+        }
+        .quiz-feedback .ok { color: var(--primary-green); }
+        .quiz-feedback .no { color: var(--error-text); }
+        .quiz-nav {
+            margin-top: auto;
+            display: flex;
+            gap: 10px;
+            justify-content: space-between;
+            flex: 0 0 auto;
+            padding-top: 6px;
+        }
+        .qnav-btn {
+            background: var(--gradient-bg);
+            color: #fff;
+            border: none;
+            padding: clamp(10px, 2vh, 14px) clamp(18px, 4vw, 28px);
+            font-size: clamp(0.9rem, 2.8vw, 1.05rem);
+            font-weight: 700;
+            border-radius: 12px;
+            cursor: pointer;
+            font-family: inherit;
+            box-shadow: 0 3px 10px rgba(76,154,71,0.3);
+            transition: transform 0.2s;
+            flex: 1;
+        }
+        .qnav-btn:hover:not(:disabled) { transform: translateY(-2px); }
+        .qnav-btn.secondary {
+            background: #fff;
+            color: var(--dark-teal-green);
+            border: 2px solid var(--dark-teal-green);
+            box-shadow: none;
+        }
+        .qnav-btn:disabled { opacity: 0.4; cursor: not-allowed; transform: none; }
+
+        /* شاشة النتيجة */
+        .quiz-result {
+            display: flex;
+            flex-direction: column;
+            gap: 14px;
+            padding: clamp(16px, 3vw, 28px);
+            max-width: 680px;
+            margin: 0 auto;
+            width: 100%;
+            text-align: center;
+            box-sizing: border-box;
+        }
+        .quiz-result .r-score {
+            font-size: clamp(1.3rem, 4vw, 1.85rem);
+            font-weight: 800;
+            color: var(--dark-teal-green);
+        }
+        .quiz-result .r-msg {
+            font-size: clamp(1rem, 3vw, 1.2rem);
+            font-weight: 700;
+            color: var(--primary-green);
+        }
+        .quiz-result .r-review {
+            background: #fff;
+            border: 2px solid var(--border-gray);
+            border-radius: 12px;
+            padding: 14px;
+            text-align: right;
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+        }
+        .quiz-result .r-review-title {
+            font-weight: 800;
+            color: var(--dark-teal-green);
+            margin-bottom: 4px;
+        }
+        .quiz-result .review-item {
+            background: transparent;
+            border: none;
+            border-bottom: 1px solid var(--border-gray);
+            border-radius: 0;
+            padding: 6px 0;
+            margin: 0;
+            font-size: clamp(0.82rem, 2.5vw, 0.95rem);
+            line-height: 1.6;
+            display: flex;
+            flex-direction: column;
+            gap: 2px;
+        }
+        .quiz-result .review-item:last-child { border-bottom: none; }
+        .review-item .ri-q { font-weight: 700; color: var(--text-main); }
+        .review-item .ri-chosen { color: var(--error-text); }
+        .review-item .ri-correct { color: var(--primary-green); font-weight: 700; }
+
+        @media (max-width: 480px) {
+            .scene-callout { max-width: 54%; font-size: 0.82rem; }
+            .scene-callout.narrator { max-width: 86%; }
+        }
+        @media (max-height: 500px) and (orientation: landscape) {
+            .scene-callout { top: 4%; max-width: 40%; }
+            .scene-callout.narrator { max-width: 70%; }
+        }
+    </style>
+</head>
+<body>
+
+    <!-- ================= شاشة المقدمة ================= -->
+    <div id="cover">
+        <h1 class="cover-title">المؤشرات الرئيسية<br>للبورصة المصرية</h1>
+        <div class="cover-img-wrap">
+            <img src="characters.jpg" alt="زياد وحمزة">
+        </div>
+        <button id="start-btn" onclick="startApp()">ابدأ ▶</button>
+    </div>
+
+    <!-- ================= التطبيق ================= -->
+    <div id="app">
+        <div class="top-bar">
+            <button class="back-btn" onclick="goHome()" title="العودة للمقدمة">⌂</button>
+            <div class="progress-mini"><div id="prog"></div></div>
+            <div class="ind" id="ind">المشهد 1 / 4</div>
+        </div>
+
+        <div class="stage-area">
+            <div class="scene-stage" id="stage">
+                <img class="scene-img" id="sceneImg" src="characters.jpg" alt="مشهد">
+                <div class="speaker-glow ziad" id="glowZiad"></div>
+                <div class="speaker-glow hamza" id="glowHamza"></div>
+                <div class="scene-callout" id="callout">
+                    <span class="who"></span>
+                    <span class="what"></span>
+                </div>
+
+                <!-- سؤال المشهد (يظهر بعد آخر جملة) -->
+                <div class="scene-quiz" id="sceneQuiz">
+                    <div id="sceneQuizBody"></div>
+                </div>
+            </div>
+        </div>
+
+        <div class="bottom-bar">
+            <button class="nav-btn secondary" id="prevBtn" onclick="prevScene()">→ السابق</button>
+            <div class="dialogue-dots" id="dots"></div>
+            <button class="nav-btn" id="nextBtn" onclick="nextScene()">التالي ←</button>
+        </div>
+
+        <!-- سلايد تعليمية تظهر قبل كل مشهد: تعرض النص المكتوب على الشاشة -->
+        <div class="info-overlay" id="infoOverlay">
+            <div class="info-card" id="infoCard">
+                <div class="info-head">
+                    <h2 class="info-title" id="infoTitle"></h2>
+                    <p class="info-subtitle" id="infoSubtitle"></p>
+                </div>
+                <ul class="info-list" id="infoList"></ul>
+                <button class="info-start-btn" id="infoStartBtn" onclick="startDialogue()">ابدأ  ▶</button>
+            </div>
+        </div>
+
+        <!-- شاشة الاختبار النهائي -->
+        <div class="quiz-screen" id="quizScreen">
+            <div class="quiz-body" id="quizBody"></div>
+        </div>
+    </div>
+
+
+    <script>
+        // ===== بيانات المشاهد (4 مشاهد بعد المقدمة) =====
+        // المشاهد بعد إزالة الراوي — زياد بيتكلم الأول، وبعده حمزة (تبادل أدوار)
+        const SCENES = [
+            {
+                title: 'أولاً: مؤشر EGX 30',
+                subtitle: 'المؤشر الرئيسي',
+                info: [
+                    'بيقيس أداء أكبر 30 شركة من حيث السيولة والنشاط.',
+                    'طريقة الحساب: القيمة السوقية المعدلة بنسبة الأسهم حرة التداول.',
+                    'الشركات الأكبر حجمًا بيكون تأثيرها في حركة المؤشر أكبر.',
+                    'بيعكس الاتجاه العام للبورصة.',
+                ],
+                lines: [
+                    { speaker: 'ziad',  who: 'زياد',  text: 'أولاً مؤشر EGX 30: ده المؤشر الرئيسي للبورصة المصرية. بيقيس أداء أكبر 30 شركة من حيث السيولة والنشاط. بيتحسب بالقيمة السوقية المعدلة بنسبة الأسهم حرة التداول؛ يعني الشركات الأكبر بتأثر أكتر.' },
+                    { speaker: 'hamza', who: 'حمزة', text: 'يعني الشركات الكبيرة هي اللي بتحرك المؤشر؟' },
+                    { speaker: 'ziad',  who: 'زياد',  text: 'أيوا، بالظبط. كل ما الشركة تكون أكبر، تأثيرها على المؤشر يكون أكبر.' },
+                ],
+                // سؤال اختبار سريع بعد المشهد الأول
+                quiz: {
+                    q: 'مؤشر EGX 30 بيقيس أداء كام شركة؟',
+                    opts: ['أ) 30 شركة', 'ب) 70 شركة', 'ج) 100 شركة'],
+                    correct: 0,
+                    note: 'EGX 30 بيقيس أداء أكبر 30 شركة من حيث السيولة والنشاط.'
+                }
+            },
+            {
+                title: 'ثانياً: مؤشر EGX 70 EWI',
+                subtitle: 'شركات متوسطة وصغيرة',
+                info: [
+                    'بيقيس أداء 70 شركة متوسطة وصغيرة من الأكثر نشاطًا.',
+                    'بيستبعد الشركات الموجودة في EGX 30.',
+                    'EWI = نظام الأوزان المتساوية.',
+                    'كل شركة ليها نفس الوزن والتأثير في المؤشر.',
+                ],
+                lines: [
+                    { speaker: 'ziad',  who: 'زياد',  text: 'ثانياً مؤشر EGX 70 EWI: بيقيس أداء 70 شركة متوسطة وصغيرة نشيطة، بعد استبعاد شركات EGX 30. وبيُحسب بنظام الأوزان المتساوية، كل شركة ليها نفس الوزن والتأثير.' },
+                    { speaker: 'hamza', who: 'حمزة', text: 'طب هنا كل شركة ليها نفس الوزن؟ يعني الشركات الصغيرة بتأثر زي الكبيرة؟' },
+                    { speaker: 'ziad',  who: 'زياد',  text: 'أيوا، ده الفرق بينه وبين EGX 30. الأوزان المتساوية بتدي فرصة متساوية لكل شركة.' },
+                ],
+                quiz: {
+                    q: 'مؤشر EGX 70 EWI بيتحسب بنظام إيه؟',
+                    opts: ['أ) القيمة السوقية', 'ب) الأوزان المتساوية', 'ج) القرعة'],
+                    correct: 1,
+                    note: 'EGX 70 EWI بيتحسب بنظام الأوزان المتساوية، لكل شركة نفس الوزن.'
+                }
+            },
+            {
+                title: 'ثالثاً: مؤشر EGX 100 EWI',
+                subtitle: 'وحركة المؤشرات',
+                info: [
+                    'بيقيس أداء 100 شركة: شركات EGX 30 + شركات EGX 70 EWI.',
+                    'بيُحسب بنظام الأوزان المتساوية.',
+                    'اختيار الشركات حسب السيولة ونشاط التداول.',
+                    'مراجعة دورية لقائمة الشركات كل 6 شهور.',
+                    'عوامل تحريك المؤشرات: العرض والطلب، نتائج الأعمال، التضخم، أسعار الفائدة، وسعر الصرف.',
+                    'الصعود أو الهبوط بيعبر عن الأداء العام لأسهم الشركات الموجودة داخل المؤشر.',
+                ],
+                lines: [
+                    { speaker: 'ziad',  who: 'زياد',  text: 'ثالثاً مؤشر EGX 100 EWI: بيجمع بين شركات EGX 30 و EGX 70 EWI، وبيُحسب بنظام الأوزان المتساوية، لكل شركة نفس الوزن والتأثير.' },
+                    { speaker: 'hamza', who: 'حمزة', text: 'طب الشركات دي بتدخل المؤشرات إزاي؟ بالقرعة؟' },
+                    { speaker: 'ziad',  who: 'زياد',  text: 'الشركات بتتختار بناءً على السيولة ونشاط التداول، والقايمة بتتراجع كل 6 شهور.' },
+                    { speaker: 'hamza', who: 'حمزة', text: 'وإيه اللي بيخلي المؤشرات تطلع وتنزل؟' },
+                    { speaker: 'ziad',  who: 'زياد',  text: 'عوامل كتير: العرض والطلب، نتائج الأعمال، التضخم، أسعار الفائدة، وسعر الصرف. وخلي بالك: صعود المؤشر مش معناه إن كل الأسهم ارتفعت.' },
+                ],
+                quiz: {
+                    q: 'هل صعود المؤشر معناه إن كل أسهم البورصة ارتفعت؟',
+                    opts: ['أ) نعم، كل الأسهم لازم ترتفع', 'ب) لا، هو بيعبر عن الأداء العام لأسهم الشركات الموجودة داخله', 'ج) معناه إن التداول توقف'],
+                    correct: 1,
+                    note: 'صعود المؤشر بيعبر عن الأداء العام لأسهم الشركات الموجودة داخله، مش لازم كل الأسهم ترتفع.'
+                }
+            },
+            {
+                title: 'الاختبار النهائي',
+                subtitle: 'اختبر معلوماتك',
+                info: [
+                ],
+                lines: [
+                    { speaker: 'ziad',  who: 'زياد',  text: 'بالتوفيق يا حمزة! دلوقتي جه وقت الاختبار النهائي، قدامك 5 أسئلة اختار الإجابة الصحيحة.' },
+                    { speaker: 'hamza', who: 'حمزة', text: 'أنا جاهز! يلا نشوف فهمت المؤشرات كويس ولا لأ.' },
+                ]
+                // المشهد الأخير ما فيهوش quiz صغير — بيوصل للاختبار النهائي مباشرة
+            },
+        ];
+
+        const QUIZ = [
+            { q: 'مؤشر EGX 30 بيقيس أداء كام شركة؟', opts: ['أ) 30 شركة', 'ب) 70 شركة', 'ج) 100 شركة'], correct: 0,
+              note: 'EGX 30 بيقيس أداء أكبر 30 شركة من حيث السيولة والنشاط.' },
+            { q: 'حساب EGX 30 بيعتمد على إيه؟', opts: ['أ) الأوزان المتساوية', 'ب) القيمة السوقية المعدلة بنسبة الأسهم حرة التداول', 'ج) القرعة'], correct: 1,
+              note: 'EGX 30 بيتحسب بالقيمة السوقية المعدلة بنسبة الأسهم حرة التداول.' },
+            { q: 'مؤشر EGX 70 EWI بيقيس أداء إيه؟', opts: ['أ) 70 شركة متوسطة وصغيرة نشيطة بعد استبعاد شركات EGX 30', 'ب) أكبر 30 شركة', 'ج) كل شركات البورصة'], correct: 0,
+              note: 'EGX 70 EWI بيقيس 70 شركة متوسطة وصغيرة نشيطة بعد استبعاد شركات EGX 30.' },
+            { q: 'اختصار EWI معناه إيه؟', opts: ['أ) الأسهم حرة التداول', 'ب) الأوزان المتساوية', 'ج) المؤشر الشامل'], correct: 1,
+              note: 'EWI اختصار لـ Equal Weights Index، يعني الأوزان المتساوية.' },
+            { q: 'مؤشر EGX 100 EWI بيجمع بين إيه؟', opts: ['أ) EGX 30 و EGX 70 EWI', 'ب) EGX 30 فقط', 'ج) EGX 70 فقط'], correct: 0,
+              note: 'EGX 100 EWI بيجمع بين شركات EGX 30 و EGX 70 EWI.' },
+        ];
+
+        let sceneIdx = 0;
+        let lineIdx = 0;
+        let played = {};   // المشاهد/الجمل اللي اتعرضت
+
+        function startApp() {
+            document.getElementById('cover').classList.add('hidden');
+            setTimeout(() => {
+                document.getElementById('app').classList.add('visible');
+                sceneIdx = 0; lineIdx = 0;
+                renderScene();
+            }, 300);
+        }
+        function goHome() {
+            if (typeTimer) { clearInterval(typeTimer); typeTimer = null; }
+            if (autoplayTimer) { clearTimeout(autoplayTimer); autoplayTimer = null; }
+            document.getElementById('infoOverlay').classList.remove('active');
+            document.getElementById('app').classList.remove('visible');
+            document.getElementById('quizScreen').classList.remove('active');
+            setTimeout(() => {
+                document.getElementById('cover').classList.remove('hidden');
+                sceneIdx = 0; lineIdx = 0; played = {};
+            }, 300);
+        }
+
+        function renderScene() {
+            if (autoplayTimer) { clearTimeout(autoplayTimer); autoplayTimer = null; }
+            const scene = SCENES[sceneIdx];
+            const totalLines = scene.lines.length;
+            // lineIdx < totalLines  => عرض جملة؛ lineIdx == totalLines => عرض سؤال المشهد
+            if (lineIdx > totalLines) lineIdx = totalLines;
+            if (!played[sceneIdx]) played[sceneIdx] = new Set();
+
+            // اخفي شاشة quiz المشهد لو ظاهرة
+            document.getElementById('sceneQuiz').classList.remove('active');
+
+            // لو احنا في أول جملة في المشهد والمشهد ده ما اتعرضش قبل كده → اعرض السلايد التعليمية
+            if (lineIdx === 0 && !played[sceneIdx].has('info') && scene.info) {
+                showInfoSlide(sceneIdx);
+                renderDots();
+                updateProgress();
+                updateNav();
+                return;
+            }
+
+            if (lineIdx < totalLines) {
+                showLine(sceneIdx, lineIdx);
+            } else {
+                // عرض سؤال المشهد
+                showSceneQuiz(sceneIdx);
+            }
+            renderDots();
+            updateProgress();
+            updateNav();
+        }
+
+        // عرض السلايد التعليمية قبل بداية الحوار (النص المكتوب على الشاشة)
+        function showInfoSlide(si) {
+            const scene = SCENES[si];
+            document.getElementById('infoTitle').textContent = scene.title || '';
+            document.getElementById('infoSubtitle').textContent = scene.subtitle || '';
+            const listEl = document.getElementById('infoList');
+            listEl.innerHTML = '';
+            (scene.info || []).forEach(pt => {
+                const li = document.createElement('li');
+                li.textContent = pt;
+                listEl.appendChild(li);
+            });
+            // لو المشهد الأخير (الاختبار) → غيّر نص الزر
+            const btn = document.getElementById('infoStartBtn');
+            btn.textContent = (si === SCENES.length - 1) ? 'ابدأ الاختبار ▶' : 'ابدأ  ▶';
+            document.getElementById('infoOverlay').classList.add('active');
+            // اخفِ الفقاعة والتوهّج
+            const callout = document.getElementById('callout');
+            callout.className = 'scene-callout';
+            document.getElementById('glowZiad').classList.remove('active');
+            document.getElementById('glowHamza').classList.remove('active');
+        }
+
+        // المستخدم داس "ابدأ الحوار" → اخفِ السلايد وابدأ الكلام
+        function startDialogue() {
+            played[sceneIdx].add('info');
+            document.getElementById('infoOverlay').classList.remove('active');
+            // المشهد الأخير (تمهيد الاختبار): زر "ابدأ الاختبار" بيفوت الحوار ويفتح الاختبار النهائي
+            if (sceneIdx === SCENES.length - 1 && !SCENES[sceneIdx].quiz) {
+                showQuiz();
+                return;
+            }
+            lineIdx = 0;
+            renderScene();
+        }
+
+        let typeTimer = null;
+
+        function showLine(si, li) {
+            const line = SCENES[si].lines[li];
+            const callout = document.getElementById('callout');
+            const whatEl = callout.querySelector('.what');
+            const whoEl  = callout.querySelector('.who');
+
+            callout.className = 'scene-callout ' + line.speaker + ' typing';
+            whoEl.textContent = line.who;
+
+            // أوقف أي كتابة سابقة
+            if (typeTimer) { clearInterval(typeTimer); typeTimer = null; }
+            whatEl.textContent = '';
+
+            // فعّل التوهّج على الشخصية المتحدثة
+            document.getElementById('glowZiad').classList.toggle('active', line.speaker === 'ziad');
+            document.getElementById('glowHamza').classList.toggle('active', line.speaker === 'hamza');
+
+            // انميشن الكتابة (حرف حرف)
+            const full = line.text;
+            let i = 0;
+            typeTimer = setInterval(() => {
+                if (i >= full.length) {
+                    clearInterval(typeTimer);
+                    typeTimer = null;
+                    callout.classList.remove('typing');
+                    // autoplay: انتقل تلقائياً للجملة التالية بعد توقف قصير
+                    autoplayNext(si, li);
+                    return;
+                }
+                i++;
+                whatEl.textContent = full.slice(0, i);
+            }, 28);
+        }
+
+        let autoplayTimer = null;
+        function autoplayNext(si, li) {
+            if (autoplayTimer) { clearTimeout(autoplayTimer); autoplayTimer = null; }
+            const scene = SCENES[si];
+            const totalLines = scene.lines.length;
+            // لو مش في آخر جملة، انتقل تلقائياً بعد 700ms للجملة التالية (زياد ↔ حمزة)
+            if (li < totalLines - 1) {
+                autoplayTimer = setTimeout(() => {
+                    autoplayTimer = null;
+                    if (sceneIdx === si && lineIdx === li) {
+                        lineIdx = li + 1;
+                        renderScene();
+                    }
+                }, 700);
+            }
+            // ملاحظة: لو آخر جملة، ما نتنقلش تلقائياً لسؤال المشهد.
+            // المستخدم يدوس زر "التالي" بنفسه عشان يفتح السؤال.
+        }
+
+        // عرض سؤال المشهد (مش الاختبار النهائي)
+        function showSceneQuiz(si) {
+            const scene = SCENES[si];
+            if (!scene.quiz) return;
+            // اخفِ الفقاعة والتوهّج
+            const callout = document.getElementById('callout');
+            callout.className = 'scene-callout';
+            document.getElementById('glowZiad').classList.remove('active');
+            document.getElementById('glowHamza').classList.remove('active');
+
+            const sq = document.getElementById('sceneQuiz');
+            const body = document.getElementById('sceneQuizBody');
+            const q = scene.quiz;
+            // رسالة إعادة المحاولة (تتحط لو جاوب غلط)
+            const retryHtml = `<div class="sq-retry">🔁 حاول تاني</div>`;
+            body.innerHTML = `
+                <div class="sq-title"> سؤال المشهد ${si+1}</div>
+                <div class="sq-q">${q.q}</div>
+                <div class="sq-opts"></div>
+                <div class="sq-feedback"></div>
+                <div class="sq-retry-wrap"></div>`;
+            const optsWrap = body.querySelector('.sq-opts');
+            const feedback = body.querySelector('.sq-feedback');
+            const retryWrap = body.querySelector('.sq-retry-wrap');
+            const attempts = { count: 0 };
+
+            function buildOptions() {
+                optsWrap.innerHTML = '';
+                q.opts.forEach((o, oi) => {
+                    const b = document.createElement('button');
+                    b.className = 'sq-opt';
+                    b.textContent = o;
+                    b.addEventListener('click', () => {
+                        if (sq.dataset.answered === '1') return;
+                        // صح: ثبّت الإجابة وفعّل زر التالي
+                        if (oi === q.correct) {
+                            sq.dataset.answered = '1';
+                            optsWrap.querySelectorAll('.sq-opt').forEach(x => x.disabled = true);
+                            b.classList.add('correct');
+                            feedback.innerHTML = `<span class="ok">✅ إجابة صحيحة! ${q.note}</span>`;
+                            retryWrap.innerHTML = '';
+                            document.getElementById('nextBtn').disabled = false;
+                        }
+                        // غلط: نوّر اختيار المستخدم أحمر بس (من غير ما نكشف الصحيحة)، واتيح إعادة المحاولة
+                        else {
+                            attempts.count++;
+                            b.classList.add('wrong');
+                            b.disabled = true;  // عطل الخيار الغلط بس — يقدر يجرب اختيار تاني
+                            feedback.innerHTML = `<span class="no">❌ إجابة غلط. حاول تاني.</span>`;
+                            retryWrap.innerHTML = retryHtml;
+                        }
+                    });
+                    optsWrap.appendChild(b);
+                });
+            }
+            buildOptions();
+            sq.dataset.answered = '0';
+            sq.classList.add('active');
+        }
+
+
+        function renderDots() {
+            const scene = SCENES[sceneIdx];
+            const total = scene.lines.length + (scene.quiz ? 1 : 0);
+            const dots = document.getElementById('dots');
+            dots.innerHTML = '';
+            for (let i = 0; i < total; i++) {
+                const d = document.createElement('span');
+                if (i === lineIdx) d.classList.add('active');
+                else if (played[sceneIdx] && played[sceneIdx].has(i)) d.classList.add('done');
+                if (i === scene.lines.length) d.classList.add('quiz-dot');
+                d.addEventListener('click', () => {
+                    if (typeTimer) { clearInterval(typeTimer); typeTimer = null; }
+                    lineIdx = i;
+                    renderScene();
+                });
+                dots.appendChild(d);
+            }
+        }
+
+        function updateProgress() {
+            const total = SCENES.length;
+            const pct = ((sceneIdx + 1) / total) * 100;
+            document.getElementById('prog').style.width = pct + '%';
+            document.getElementById('ind').textContent = `المشهد ${sceneIdx + 1} / ${total}`;
+        }
+
+        function updateNav() {
+            const scene = SCENES[sceneIdx];
+            const totalLines = scene.lines.length;
+            const hasQuiz = !!scene.quiz;
+            const atFirstLine = (lineIdx === 0);
+            const atLastLine = (lineIdx === totalLines - 1);
+            const atQuiz = hasQuiz && (lineIdx === totalLines);
+            const atFirstScene = (sceneIdx === 0);
+            const atLastScene = (sceneIdx === SCENES.length - 1);
+
+            document.getElementById('prevBtn').disabled = (atFirstScene && atFirstLine);
+
+            const nextBtn = document.getElementById('nextBtn');
+            const sq = document.getElementById('sceneQuiz');
+            const sceneDone = atLastLine && (!hasQuiz || (sq.dataset.answered === '1'));
+            // زر التالي بيقدّم المشهد لخطوة واحدة بس من منطق "الكلام → السؤال → المشهد التالي"
+            // (مش بيقدّم الكلام جملة جملة، الكلام بيتسلسل أوتوماتيك).
+            if (atLastScene) {
+                if (sceneDone) {
+                    nextBtn.textContent = 'الاختبار النهائي ';
+                    nextBtn.disabled = false;
+                } else if (atLastLine && hasQuiz) {
+                    // خلصنا الكلام، باقي نفتح السؤال
+                    nextBtn.textContent = 'السؤال ←';
+                    nextBtn.disabled = false;
+                } else if (atQuiz) {
+                    // السؤال مفتوح، محتاج يجاوب صح
+                    nextBtn.textContent = 'الاختبار النهائي ';
+                    nextBtn.disabled = true;
+                } else {
+                    // لسه في الكلام
+                    nextBtn.textContent = 'السؤال ←';
+                    nextBtn.disabled = false;
+                }
+            } else {
+                if (atQuiz) {
+                    // السؤال مفتوح، محتاج يجاوب صح
+                    nextBtn.textContent = 'المشهد التالي ←';
+                    nextBtn.disabled = (sq.dataset.answered !== '1');
+                } else if (atLastLine && hasQuiz) {
+                    nextBtn.textContent = 'السؤال ←';
+                    nextBtn.disabled = false;
+                } else {
+                    nextBtn.textContent = 'المشهد التالي ←';
+                    nextBtn.disabled = false;
+                }
+            }
+        }
+
+        // التالي: بيتنقل بين المشاهد.
+        // جوه المشهد: الكلام بيتسلسل أوتوماتيك (زياد ↔ حمزة)، ولو احنا في آخر جملة،
+        // دوّسة "التالي" بتفتح سؤال المشهد. ولما السؤال يتعمل → المشهد التالي / الاختبار.
+        function nextScene() {
+            if (typeTimer) { clearInterval(typeTimer); typeTimer = null; }
+            if (autoplayTimer) { clearTimeout(autoplayTimer); autoplayTimer = null; }
+            // لو السلايد التعليمية ظاهرة → سجّل إنها اتعرضت وروح للمشهد التالي مباشرة
+            const infoEl = document.getElementById('infoOverlay');
+            if (infoEl.classList.contains('active')) {
+                played[sceneIdx].add('info');
+                infoEl.classList.remove('active');
+                if (sceneIdx < SCENES.length - 1) {
+                    sceneIdx++; lineIdx = 0;
+                    renderScene();
+                } else {
+                    showQuiz();
+                }
+                return;
+            }
+            const scene = SCENES[sceneIdx];
+            const totalLines = scene.lines.length;
+            const hasQuiz = !!scene.quiz;
+            const atLastLine = (lineIdx === totalLines - 1);
+            const atQuiz = hasQuiz && (lineIdx === totalLines);
+
+            // 1) لو احنا في آخر جملة وفيه سؤال مشهد → افتح السؤال
+            if (atLastLine && hasQuiz) {
+                lineIdx = totalLines;
+                renderScene();
+                return;
+            }
+            // 2) لو احنا في السؤال واتجاوب صح → المشهد التالي / الاختبار
+            if (atQuiz) {
+                if (sceneIdx < SCENES.length - 1) {
+                    sceneIdx++;
+                    lineIdx = 0;
+                    renderScene();
+                } else {
+                    showQuiz();
+                }
+                return;
+            }
+            // 3) لو احنا في آخر جملة ومفيش سؤال مشهد → المشهد التالي / الاختبار
+            if (atLastLine && !hasQuiz) {
+                if (sceneIdx < SCENES.length - 1) {
+                    sceneIdx++;
+                    lineIdx = 0;
+                    renderScene();
+                } else {
+                    showQuiz();
+                }
+                return;
+            }
+            // 4) لو احنا في وسط الكلام → روح آخر جملة (الزر مبيقدّمش الكلام جملة جملة،
+            //    بس يقدر ينجّز للمشهد لآخر جملة لو المستخدم عايز يتخطى الكتابة)
+            lineIdx = totalLines - 1;
+            renderScene();
+        }
+        function prevScene() {
+            if (typeTimer) { clearInterval(typeTimer); typeTimer = null; }
+            if (autoplayTimer) { clearTimeout(autoplayTimer); autoplayTimer = null; }
+            // لو السلايد التعليمية ظاهرة → روح للمشهد السابق (آخر جملة فيه)
+            const infoEl = document.getElementById('infoOverlay');
+            if (infoEl.classList.contains('active')) {
+                infoEl.classList.remove('active');
+                if (sceneIdx > 0) {
+                    sceneIdx--;
+                    const prev = SCENES[sceneIdx];
+                    lineIdx = prev.lines.length + (prev.quiz ? 1 : 0) - 1;
+                }
+                renderScene();
+                return;
+            }
+            if (lineIdx > 0) {
+                lineIdx--;
+                renderScene();
+            } else if (sceneIdx > 0) {
+                sceneIdx--;
+                const prevScene = SCENES[sceneIdx];
+                lineIdx = prevScene.lines.length + (prevScene.quiz ? 1 : 0) - 1;
+                renderScene();
+            }
+        }
+
+        const userAns = [null, null, null, null, null];
+        let quizIdx = 0;   // فهرس السؤال الحالي في الاختبار النهائي
+
+        function showQuiz() {
+            quizIdx = 0;
+            for (let i = 0; i < userAns.length; i++) userAns[i] = null;
+            renderQuizQuestion();
+            document.getElementById('quizScreen').classList.add('active');
+        }
+
+        // عرض سؤال واحد في كل سلايد
+        // ملاحظة: في الاختبار النهائي ما نظهرش صح/غلط بعد كل سؤال —
+        // المستخدم بيجاوب وبيتنقل للسؤال اللي بعده طول ما اختار إجابة،
+        // والصح/الغلط بيتظاهر بس في شاشة النتيجة بعد ما يخلص كل الأسئلة.
+        function renderQuizQuestion() {
+            const q = QUIZ[quizIdx];
+            const body = document.getElementById('quizBody');
+            const answered = userAns[quizIdx] !== null;
+            let optsHtml = '';
+            q.opts.forEach((o, oi) => {
+                let cls = 'q-opt';
+                // نظهر اختيار المستخدم بس (marker) من غير ما نقول صح/غلط
+                if (answered && oi === userAns[quizIdx]) cls += ' chosen';
+                optsHtml += `<button class="${cls}" data-oi="${oi}">${o}</button>`;
+            });
+            // نقاط تقدم الأسئلة
+            let dotsHtml = '';
+            QUIZ.forEach((_, i) => {
+                let dc = 'qdot';
+                if (i === quizIdx) dc += ' active';
+                else if (userAns[i] !== null) dc += ' done';
+                dotsHtml += `<span class="${dc}"></span>`;
+            });
+
+            // مفيش feedback هنا — الصح/الغلط بيتظاهر بس في النتيجة
+            const fbHtml = '';
+
+            body.innerHTML = `
+                <div class="quiz-slide">
+                    <div class="quiz-progress">
+                        <span>سؤال ${quizIdx + 1} من ${QUIZ.length}</span>
+                        <div class="quiz-dots">${dotsHtml}</div>
+                    </div>
+                    <div class="quiz-q-box">
+                        <span class="q-num">${quizIdx + 1}</span>
+                        <div class="q-text">${q.q}</div>
+                    </div>
+                    <div class="q-opts">${optsHtml}</div>
+                    <div class="quiz-feedback">${fbHtml}</div>
+                    <div class="quiz-nav">
+                        <button class="qnav-btn secondary" id="quizPrev" onclick="quizPrev()">→ السابق</button>
+                        <button class="qnav-btn" id="quizNext" onclick="quizNext()"></button>
+                    </div>
+                </div>`;
+
+            // ربط أزرار الخيارات — اختيار المستخدم + انتقال تلقائي للسؤال التالي
+            body.querySelectorAll('.q-opt').forEach(btn => {
+                btn.addEventListener('click', () => {
+                    if (userAns[quizIdx] !== null) return;
+                    const oi = +btn.dataset.oi;
+                    userAns[quizIdx] = oi;
+                    renderQuizQuestion();  // حدّث تلوين الاختيار + النقاط + زر التالي
+                    // انتقال تلقائي للسؤال التالي بعد اختصار قصير (ما عدا آخر سؤال)
+                    if (quizIdx < QUIZ.length - 1) {
+                        setTimeout(() => { quizNext(); }, 350);
+                    }
+                });
+            });
+
+            // أزرار التنقل
+            document.getElementById('quizPrev').disabled = (quizIdx === 0);
+            const nextBtn = document.getElementById('quizNext');
+            if (quizIdx === QUIZ.length - 1) {
+                nextBtn.textContent = 'عرض النتيجة ';
+                nextBtn.disabled = (userAns[quizIdx] === null);
+            } else {
+                nextBtn.textContent = 'التالي ←';
+                nextBtn.disabled = (userAns[quizIdx] === null);
+            }
+        }
+
+        function quizNext() {
+            if (userAns[quizIdx] === null) return;
+            if (quizIdx < QUIZ.length - 1) {
+                quizIdx++;
+                renderQuizQuestion();
+            } else {
+                submitQuiz();
+            }
+        }
+        function quizPrev() {
+            if (quizIdx > 0) {
+                quizIdx--;
+                renderQuizQuestion();
+            }
+        }
+
+        function submitQuiz() {
+            let score = 0;
+            QUIZ.forEach((q, qi) => { if (userAns[qi] === q.correct) score++; });
+            const pct = Math.round((score / QUIZ.length) * 100);
+            let msg;
+            if (score === QUIZ.length) msg = ' ممتاز! فهمت المؤشرات كويس جدًا.';
+            else if (score >= Math.ceil(QUIZ.length * 0.6)) msg = ' كويس! محتاج تراجع كام نقطة.';
+            else msg = ' محتاج تراجع المشاهد تاني.';
+
+            let review = '';
+            QUIZ.forEach((q, qi) => {
+                const correct = (userAns[qi] === q.correct);
+                const mark = correct ? '✅' : '❌';
+                review += `<div class="review-item">
+                    <span class="ri-q">السؤال ${qi+1} ${mark}</span>
+                    <span class="ri-chosen">إجابتك: ${userAns[qi] !== null ? q.opts[userAns[qi]] : 'لم تتم الإجابة'}</span>
+                    <span class="ri-correct">الصحيحة: ${q.opts[q.correct]}</span>
+                </div>`;
+            });
+
+            const body = document.getElementById('quizBody');
+            body.innerHTML = `
+                <div class="quiz-result">
+                    <div class="r-score">نتيجتك: ${score} / ${QUIZ.length} (${pct}%)</div>
+                    <div class="r-msg">${msg}</div>
+                    <div class="r-review">
+                        <div class="r-review-title">مراجعة الإجابات:</div>
+                        ${review}
+                    </div>
+                    <div class="quiz-nav">
+                        <button class="qnav-btn" onclick="showQuiz()">إعادة الاختبار 🔁</button>
+                        <button class="qnav-btn secondary" onclick="goHome()">العودة للبداية ⌂</button>
+                    </div>
+                </div>`;
+        }
+    </script>
+</body>
+</html>
